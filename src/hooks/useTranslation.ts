@@ -1,7 +1,3 @@
-import {
-	directTranslate,
-	isDirectTranslationReady,
-} from "@/lib/translation/direct";
 import { getModelId } from "@/lib/translation/models";
 import type { TranslationActions, TranslationState } from "@/types/translation";
 // Translation hook for managing translation state
@@ -53,6 +49,17 @@ export function useTranslation(): [TranslationState, TranslationActions] {
 		console.log("📨 useEffect received message:", type, payload);
 
 		switch (type) {
+			case "update": {
+				// Handle partial translation updates (streaming)
+				const updatePayload = payload as { translation: string };
+				setState((prev) => ({
+					...prev,
+					outputText: updatePayload.translation,
+					isTranslating: true,
+					status: "translating",
+				}));
+				break;
+			}
 			case "result": {
 				console.log("✅ Processing result:", payload);
 				const translationResult = payload as { translation: string };
@@ -95,10 +102,13 @@ export function useTranslation(): [TranslationState, TranslationActions] {
 			case "status": {
 				console.log("📝 Status update:", payload);
 				const statusPayload = payload as { status: string; message?: string };
-				setState((prev) => ({
-					...prev,
-					status: statusPayload.status as TranslationState["status"],
-				}));
+				// Don't overwrite status if we are already translating (to avoid flickering)
+				if (statusPayload.status !== "translating" || !state.isTranslating) {
+					setState((prev) => ({
+						...prev,
+						status: statusPayload.status as TranslationState["status"],
+					}));
+				}
 				break;
 			}
 			default:
@@ -138,6 +148,7 @@ export function useTranslation(): [TranslationState, TranslationActions] {
 			inputText: state.inputText,
 			sourceLang: state.sourceLang,
 			targetLang: state.targetLang,
+			isReady,
 		});
 
 		if (!state.inputText.trim()) {
@@ -145,40 +156,21 @@ export function useTranslation(): [TranslationState, TranslationActions] {
 			return;
 		}
 
-		console.log("🚀 Starting direct translation...");
+		// Ensure model is loaded (the worker handles this logic internally or we trigger loadModel)
+		// For now, let's assume the worker handles lazy loading or we just trigger translation
+
+		console.log("🚀 Starting worker translation...");
 		setState((prev) => ({
 			...prev,
 			isTranslating: true,
 			status: "translating",
 			error: null,
+			outputText: "", // Clear previous output
 		}));
 
-		// Direct translation on main thread
-		try {
-			const translation = await directTranslate(
-				state.inputText,
-				state.sourceLang,
-				state.targetLang,
-			);
-
-			console.log("✅ Direct translation result:", translation);
-			setState((prev) => ({
-				...prev,
-				outputText: translation,
-				isTranslating: false,
-				status: "complete",
-				error: null,
-			}));
-		} catch (error) {
-			console.error("❌ Direct translation failed:", error);
-			setState((prev) => ({
-				...prev,
-				error: error instanceof Error ? error.message : "Translation failed",
-				isTranslating: false,
-				status: "error",
-			}));
-		}
-	}, [state.inputText, state.sourceLang, state.targetLang]);
+		// Use worker for translation
+		translate(state.inputText, state.sourceLang, state.targetLang);
+	}, [state.inputText, state.sourceLang, state.targetLang, translate, isReady]);
 
 	const clear = useCallback(() => {
 		setState((prev) => ({

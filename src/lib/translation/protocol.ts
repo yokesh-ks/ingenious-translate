@@ -15,6 +15,8 @@ import type {
 	TranslatePayload,
 	TranslateRequest,
 	UnloadModelRequest,
+	UpdatePayload,
+	UpdateResponse,
 	WorkerRequest,
 	WorkerResponse,
 } from "@/types/worker";
@@ -54,6 +56,11 @@ export const WorkerResponses = {
 		payload,
 	}),
 
+	update: (payload: UpdatePayload): UpdateResponse => ({
+		type: "update",
+		payload,
+	}),
+
 	result: (payload: ResultPayload): ResultResponse => ({
 		type: "result",
 		payload,
@@ -70,6 +77,12 @@ export function isProgressMessage(
 	message: WorkerResponse,
 ): message is ProgressResponse {
 	return message.type === "progress";
+}
+
+export function isUpdateMessage(
+	message: WorkerResponse,
+): message is UpdateResponse {
+	return message.type === "update";
 }
 
 export function isResultMessage(

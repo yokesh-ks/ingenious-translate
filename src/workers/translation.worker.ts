@@ -184,17 +184,41 @@ async function handleTranslate(payload: {
 
 	try {
 		console.log("📝 Translating text:", text);
+
+		// Perform translation with streaming support
 		const result = await translator(text, {
 			src_lang: sourceLang,
 			tgt_lang: targetLang,
+			// Streaming callback for partial outputs
+			callback_function: (output: any) => {
+				// Get the tokenizer from the translator pipeline
+				const partialTranslation = (translator as any).tokenizer.decode(
+					output[0].output_token_ids,
+					{ skip_special_tokens: true },
+				);
+
+				console.log("📤 Streaming update:", partialTranslation);
+
+				// Send partial translation to main thread
+				self.postMessage({
+					type: "update",
+					payload: {
+						translation: partialTranslation,
+						isPartial: true,
+					},
+				});
+			},
 		});
+
 		console.log("✅ Translation result:", result);
 
+		// Send final translation
 		self.postMessage({
 			type: "result",
 			payload: {
-				translation: result.translation_text,
+				translation: (result as any).translation_text,
 				confidence: 1.0, // transformers.js doesn't provide confidence scores
+				isPartial: false,
 			},
 		});
 
