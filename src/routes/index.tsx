@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { TranslationPanel } from "@/components/translator/TranslationPanel";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
@@ -7,8 +7,10 @@ export const Route = createFileRoute("/")({
 
 function HomeComponent() {
 	return (
-		<div>
-			<Button>Click</Button>
+		<div className="min-h-screen bg-background">
+			<main className="container mx-auto py-8">
+				<TranslationPanel />
+			</main>
 		</div>
 	);
 }
