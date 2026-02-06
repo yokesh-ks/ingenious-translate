@@ -1,85 +1,108 @@
-// Basic wrapper for Web Speech API's SpeechSynthesis
+// Web Speech API wrapper for Text-to-Speech
 
-export interface Voice {
-	name: string;
-	lang: string;
-	default: boolean;
-	localService: boolean;
-	voiceURI: string;
+export interface TTSOptions {
+	lang?: string;
+	voice?: SpeechSynthesisVoice | null;
+	pitch?: number;
+	rate?: number;
+	volume?: number;
 }
 
+// Create a speech utterance
+export function browserTTS(
+	text: string,
+	options?: TTSOptions,
+): SpeechSynthesisUtterance {
+	const utterance = new SpeechSynthesisUtterance(text);
+
+	if (options?.lang) {
+		utterance.lang = options.lang;
+	}
+
+	if (options?.voice) {
+		utterance.voice = options.voice;
+	}
+
+	if (options?.pitch !== undefined) {
+		utterance.pitch = options.pitch;
+	}
+
+	if (options?.rate !== undefined) {
+		utterance.rate = options.rate;
+	}
+
+	if (options?.volume !== undefined) {
+		utterance.volume = options.volume;
+	}
+
+	return utterance;
+}
+
+// Get all available voices
+export function getVoices(): SpeechSynthesisVoice[] {
+	return speechSynthesis.getVoices();
+}
+
+// Get voices for a specific language
+export function getVoicesForLang(lang: string): SpeechSynthesisVoice[] {
+	const voices = getVoices();
+	return voices.filter((voice) => voice.lang.startsWith(lang));
+}
+
+// Check if TTS is available
 export function isTTSAvailable(): boolean {
 	return "speechSynthesis" in window;
 }
 
-export function getVoices(): Promise<Voice[]> {
-	return new Promise((resolve) => {
-		if (!isTTSAvailable()) {
-			resolve([]);
-			return;
-		}
-
-		const voices = window.speechSynthesis.getVoices();
-		if (voices.length > 0) {
-			resolve(
-				voices.map((v) => ({
-					name: v.name,
-					lang: v.lang,
-					default: v.default,
-					localService: v.localService,
-					voiceURI: v.voiceURI,
-				})),
-			);
-			return;
-		}
-
-		// Voices might be loaded asynchronously
-		window.speechSynthesis.onvoiceschanged = () => {
-			const voices = window.speechSynthesis.getVoices();
-			resolve(
-				voices.map((v) => ({
-					name: v.name,
-					lang: v.lang,
-					default: v.default,
-					localService: v.localService,
-					voiceURI: v.voiceURI,
-				})),
-			);
-		};
-	});
+// Get the default voice for a language
+export function getDefaultVoiceForLang(
+	lang: string,
+): SpeechSynthesisVoice | null {
+	const voices = getVoicesForLang(lang);
+	return voices[0] || null;
 }
 
+// Cancel any ongoing speech
+export function cancelSpeech(): void {
+	speechSynthesis.cancel();
+}
+
+// Speak text with options
 export function speak(
 	text: string,
-	lang: string,
-	onStart?: () => void,
-	onEnd?: () => void,
-	onError?: (error: any) => void,
-): void {
-	if (!isTTSAvailable() || !text) return;
+	options?: TTSOptions,
+): SpeechSynthesisUtterance | null {
+	if (!text.trim()) return null;
 
-	// Cancel any ongoing speech
-	window.speechSynthesis.cancel();
+	const utterance = browserTTS(text, options);
 
-	const utterance = new SpeechSynthesisUtterance(text);
-	utterance.lang = lang;
+	utterance.onstart = () => {
+		// Speech started
+	};
 
-	// Try to match voice to language better if possible
-	// This is a simple heuristic, can be improved
-	// const voices = window.speechSynthesis.getVoices();
-	// const matchingVoice = voices.find(v => v.lang.startsWith(lang));
-	// if (matchingVoice) {
-	//   utterance.voice = matchingVoice;
-	// }
+	utterance.onend = () => {
+		// Speech ended
+	};
 
-	if (onStart) utterance.onstart = onStart;
-	if (onEnd) utterance.onend = onEnd;
-	if (onError) utterance.onerror = onError;
+	utterance.onerror = (event) => {
+		console.error("TTS error:", event.error);
+	};
 
-	window.speechSynthesis.speak(utterance);
+	speechSynthesis.speak(utterance);
+	return utterance;
 }
 
-export function stop(): void {
-	if (!isTTSAvailable()) return;
-	window.speechSynthesis.cancel();
+// Check if currently speaking
+export function isSpeaking(): boolean {
+	return speechSynthesis.speaking;
+}
+
+// Pause speech
+export function pauseSpeech(): void {
+	speechSynthesis.pause();
+}
+
+// Resume speech
+export function resumeSpeech(): void {
+	speechSynthesis.resume();
 }

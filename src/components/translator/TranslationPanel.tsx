@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTTS } from "@/hooks/useTTS";
 // Main translation panel component
 import { useTranslation } from "@/hooks/useTranslation";
 import { ArrowLeftRight } from "lucide-react";
@@ -10,16 +11,22 @@ import { TTSSpeaker } from "./TTSSpeaker";
 import { TextInput } from "./TextInput";
 import { TextOutput } from "./TextOutput";
 import { TranslateButton } from "./TranslateButton";
-import { VoiceInput } from "./VoiceInput";
 
 export function TranslationPanel() {
 	const [state, actions] = useTranslation();
+	const { speak, isSpeaking, stop } = useTTS();
 
-	const handleVoiceTranscript = (text: string, isFinal: boolean) => {
-		if (isFinal) {
-			const current = state.inputText;
-			const prefix = current.trim() ? current.trim() + " " : "";
-			actions.setInputText(prefix + text);
+	const handleSpeak = () => {
+		if (state.outputText && isSpeaking) {
+			stop();
+		} else if (state.outputText) {
+			speak(state.outputText, state.targetLang);
+		}
+	};
+
+	const handleCopy = async () => {
+		if (state.outputText) {
+			await navigator.clipboard.writeText(state.outputText);
 		}
 	};
 
@@ -62,17 +69,13 @@ export function TranslationPanel() {
 							placeholder="Enter text to translate..."
 							className="min-h-[200px]"
 						/>
-						<div className="flex justify-between items-center">
-							<VoiceInput
-								onTranscript={handleVoiceTranscript}
-								lang={state.sourceLang}
-							/>
-							{state.inputText && (
+						{state.inputText && (
+							<div className="flex justify-end">
 								<Button variant="neutral" size="sm" onClick={actions.clear}>
 									Clear
 								</Button>
-							)}
-						</div>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
@@ -85,8 +88,8 @@ export function TranslationPanel() {
 						/>
 						{state.outputText && (
 							<div className="flex justify-end gap-2">
-								<CopyButton text={state.outputText} />
-								<TTSSpeaker text={state.outputText} lang={state.targetLang} />
+								<CopyButton />
+								<TTSSpeaker onClick={handleSpeak} isSpeaking={isSpeaking} />
 							</div>
 						)}
 					</CardContent>

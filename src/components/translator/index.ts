@@ -8,4 +8,3 @@ export { StatusIndicator } from "./StatusIndicator";
 export { TTSSpeaker } from "./TTSSpeaker";
 export { CopyButton } from "./CopyButton";
 export { ModelManager } from "./ModelManager";
-export { VoiceInput } from "./VoiceInput";

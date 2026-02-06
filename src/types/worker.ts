@@ -16,14 +16,12 @@ export type WorkerResponse =
 	| StatusResponse
 	| ProgressResponse
 	| LoadedResponse
-	| UpdateResponse
 	| ResultResponse
 	| ErrorResponse;
 
 export type StatusResponse = { type: "status"; payload: StatusPayload };
 export type ProgressResponse = { type: "progress"; payload: ProgressPayload };
 export type LoadedResponse = { type: "loaded"; payload: LoadedPayload };
-export type UpdateResponse = { type: "update"; payload: UpdatePayload };
 export type ResultResponse = { type: "result"; payload: ResultPayload };
 export type ErrorResponse = { type: "error"; payload: ErrorPayload };
 
@@ -47,17 +45,10 @@ export interface ProgressPayload {
 	status?: string;
 }
 
-// Update Payload (for streaming translations)
-export interface UpdatePayload {
-	translation: string;
-	isPartial: boolean;
-}
-
 // Result Payload
 export interface ResultPayload {
 	translation: string;
 	confidence?: number;
-	isPartial?: boolean;
 }
 
 // Error Payload

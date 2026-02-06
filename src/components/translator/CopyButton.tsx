@@ -4,19 +4,25 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
 interface CopyButtonProps {
-	text?: string;
-	className?: string;
+	onClick?: () => void;
 }
 
-export function CopyButton({ text, className }: CopyButtonProps) {
+export function CopyButton({ onClick }: CopyButtonProps) {
 	const [copied, setCopied] = useState(false);
 
 	const handleClick = async () => {
-		if (text) {
-			await navigator.clipboard.writeText(text);
+		// Get the translated text from the output textarea
+		const outputText = document.querySelector(
+			"#translated-text",
+		) as HTMLTextAreaElement;
+
+		if (outputText?.value) {
+			await navigator.clipboard.writeText(outputText.value);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		}
+
+		onClick?.();
 	};
 
 	return (
